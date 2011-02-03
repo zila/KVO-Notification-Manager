@@ -37,10 +37,10 @@
 
 static id KeyForTarget(id inObserver, id inTarget, NSString *inKeyPath, NSString *inIdentifier)
 {
-NSCAssert(inKeyPath != NULL, @"No key path");
-NSCAssert(inTarget != NULL, @"No target");
+    NSCAssert(inKeyPath != NULL, @"No key path");
+    NSCAssert(inTarget != NULL, @"No target");
 
-return([NSString stringWithFormat:@"%x:%x:%@:%@", inObserver, inTarget, inKeyPath, inIdentifier]);
+    return([NSString stringWithFormat:@"%x:%x:%@:%@", inObserver, inTarget, inKeyPath, inIdentifier]);
 }
 
 static NSString *theHelpersKey = @"NSObject_KVOBlockNotificationExtensions_Helpers";
@@ -51,47 +51,46 @@ static NSString *theHelpersKey = @"NSObject_KVOBlockNotificationExtensions_Helpe
 
 - (void)addObserver:(NSObject *)observer handler:(KVOBlock)inHandler forKeyPath:(NSString *)inKeyPath options:(NSKeyValueObservingOptions)inOptions identifier:(id)inIdentifier
 {
-NSAssert(inHandler != NULL, @"No block");
-NSAssert(inKeyPath != NULL, @"No key path");
+    NSAssert(inHandler != NULL, @"No block");
+    NSAssert(inKeyPath != NULL, @"No key path");
 
-NSMutableDictionary *theHelpers = objc_getAssociatedObject(observer, theHelpersKey);
-if (theHelpers == NULL)
-	{
-	theHelpers = [NSMutableDictionary dictionary];
-	objc_setAssociatedObject(observer, theHelpersKey, theHelpers, OBJC_ASSOCIATION_RETAIN);
-	}
+    NSMutableDictionary *theHelpers = objc_getAssociatedObject(observer, theHelpersKey);
+    if (theHelpers == NULL) {
+        theHelpers = [NSMutableDictionary dictionary];
+        objc_setAssociatedObject(observer, theHelpersKey, theHelpers, OBJC_ASSOCIATION_RETAIN);
+    }
 
-id theKey = KeyForTarget(observer, self, inKeyPath, inIdentifier);
+    id theKey = KeyForTarget(observer, self, inKeyPath, inIdentifier);
 
-CKVOBlockNotificationHelper *theHelper = [theHelpers objectForKey:theKey];
-if (theHelper != NULL)
-	{
-	[self removeObserver:theHelper forKeyPath:inKeyPath];
-	//
-	[theHelpers removeObjectForKey:theKey];
-	}
+    CKVOBlockNotificationHelper *theHelper = [theHelpers objectForKey:theKey];
+    if (theHelper != NULL) {
+        [self removeObserver:theHelper forKeyPath:inKeyPath];
+        [theHelpers removeObjectForKey:theKey];
+    }
 
-theHelper = [[[CKVOBlockNotificationHelper alloc] initWithTarget:self keyPath:inKeyPath block:inHandler identifier:inIdentifier] autorelease];
+    theHelper = [[[CKVOBlockNotificationHelper alloc] initWithTarget:self keyPath:inKeyPath block:inHandler identifier:inIdentifier] autorelease];
 
-[theHelpers setObject:theHelper forKey:theKey];
-//
-[self addObserver:theHelper forKeyPath:inKeyPath options:inOptions context:self];
+    [theHelpers setObject:theHelper forKey:theKey];
+
+    [self addObserver:theHelper forKeyPath:inKeyPath options:inOptions context:self];
 }
 
 - (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)inKeyPath identifier:(id)inIdentifier
 {
-id theKey = KeyForTarget(observer, self, inKeyPath, inIdentifier);
+    id theKey = KeyForTarget(observer, self, inKeyPath, inIdentifier);
 
-NSMutableDictionary *theHelpers = objc_getAssociatedObject(observer, theHelpersKey);
+    NSMutableDictionary *theHelpers = objc_getAssociatedObject(observer, theHelpersKey);
 
-CKVOBlockNotificationHelper *theHelper = [theHelpers objectForKey:theKey];
+    CKVOBlockNotificationHelper *theHelper = [theHelpers objectForKey:theKey];
 
-if (theHelper != NULL)
-	{
-	[self removeObserver:theHelper forKeyPath:inKeyPath];
-	//
-	[theHelpers removeObjectForKey:theKey];
-	}
+    if (theHelper != NULL) {
+        [self removeObserver:theHelper forKeyPath:inKeyPath];
+        [theHelpers removeObjectForKey:theKey];
+        
+        if (![theHelpers count]) {
+            objc_setAssociatedObject(observer, theHelpersKey, nil, OBJC_ASSOCIATION_RETAIN);            
+        }
+    }
 }
 
 @end
